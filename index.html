@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>All World Radio — Радио со всего мира</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --card: #16161f;
+    --border: rgba(255,255,255,0.06);
+    --accent: #e63946;
+    --accent2: #ff6b35;
+    --gold: #f4a261;
+    --text: #f0eff4;
+    --muted: rgba(240,239,244,0.45);
+    --radius: 16px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ── Noise texture overlay ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+
+  /* ── Ambient glow ── */
+  .glow-orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .glow-orb-1 {
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(230,57,70,0.12), transparent 70%);
+    top: -200px; left: -100px;
+    animation: drift1 18s ease-in-out infinite alternate;
+  }
+  .glow-orb-2 {
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(244,162,97,0.08), transparent 70%);
+    bottom: 20%; right: -150px;
+    animation: drift2 22s ease-in-out infinite alternate;
+  }
+  @keyframes drift1 { to { transform: translate(60px, 80px); } }
+  @keyframes drift2 { to { transform: translate(-60px, -60px); } }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    padding: 20px 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    z-index: 100;
+    background: linear-gradient(to bottom, rgba(10,10,15,0.95), transparent);
+    backdrop-filter: blur(12px);
+  }
+  .nav-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800; font-size: 1.1rem;
+    letter-spacing: 0.05em;
+    color: var(--text);
+    text-decoration: none;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .nav-logo span { color: var(--accent); }
+  .nav-pill {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 8px 20px;
+    font-size: 0.82rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    padding: 120px 24px 80px;
+    z-index: 1;
+  }
+
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(230,57,70,0.1);
+    border: 1px solid rgba(230,57,70,0.25);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-size: 0.75rem;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 32px;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.2s forwards;
+  }
+  .hero-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.7); }
+  }
+
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(3rem, 9vw, 7.5rem);
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    max-width: 900px;
+    opacity: 0;
+    animation: fadeUp 0.9s 0.4s forwards;
+  }
+
+  .hero h1 .line-accent {
+    display: block;
+    background: linear-gradient(135deg, var(--accent), var(--accent2), var(--gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-sub {
+    margin-top: 28px;
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    color: var(--muted);
+    max-width: 520px;
+    opacity: 0;
+    animation: fadeUp 0.9s 0.6s forwards;
+  }
+
+  /* ── Play Store кнопка ── */
+  .cta-wrap {
+    margin-top: 48px;
+    display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+    opacity: 0;
+    animation: fadeUp 0.9s 0.8s forwards;
+  }
+
+  .btn-play {
+    display: inline-flex; align-items: center; gap: 12px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    text-decoration: none;
+    padding: 16px 32px;
+    border-radius: 14px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    transition: transform 0.25s, box-shadow 0.25s;
+    box-shadow: 0 8px 32px rgba(230,57,70,0.3);
+  }
+  .btn-play:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 16px 48px rgba(230,57,70,0.45);
+  }
+  .btn-play svg { width: 22px; height: 22px; }
+
+  .btn-secondary {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    color: var(--text);
+    text-decoration: none;
+    padding: 16px 28px;
+    border-radius: 14px;
+    font-size: 0.95rem;
+    transition: background 0.25s, transform 0.25s;
+  }
+  .btn-secondary:hover {
+    background: rgba(255,255,255,0.09);
+    transform: translateY(-2px);
+  }
+
+  /* ── Mockup phone ── */
+  .hero-visual {
+    margin-top: 72px;
+    position: relative;
+    opacity: 0;
+    animation: fadeUp 1s 1s forwards;
+  }
+  .phone-frame {
+    width: 220px;
+    height: 440px;
+    background: var(--card);
+    border: 2px solid rgba(255,255,255,0.1);
+    border-radius: 36px;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+  .phone-notch {
+    width: 60px; height: 20px;
+    background: #0a0a0f;
+    border-radius: 0 0 12px 12px;
+    margin: 0 auto;
+    position: relative; z-index: 2;
+  }
+  .phone-screen {
+    padding: 0 10px 10px;
+    height: 100%;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .station-row {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px;
+    padding: 8px 10px;
+    animation: slideIn 0.4s ease forwards;
+    opacity: 0;
+  }
+  .station-row:nth-child(1) { animation-delay: 1.4s; }
+  .station-row:nth-child(2) { animation-delay: 1.6s; }
+  .station-row:nth-child(3) { animation-delay: 1.8s; }
+  .station-row:nth-child(4) { animation-delay: 2.0s; }
+  .station-row:nth-child(5) { animation-delay: 2.2s; }
+  .station-row.active {
+    background: rgba(230,57,70,0.15);
+    border: 1px solid rgba(230,57,70,0.2);
+  }
+  .station-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+  .station-info { flex: 1; min-width: 0; }
+  .station-name {
+    font-size: 0.65rem;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .station-genre {
+    font-size: 0.55rem;
+    color: var(--muted);
+  }
+  .eq-bars {
+    display: flex; gap: 2px; align-items: flex-end; height: 16px;
+  }
+  .eq-bar {
+    width: 3px;
+    background: var(--accent);
+    border-radius: 2px;
+    animation: eq 0.6s ease-in-out infinite alternate;
+  }
+  .eq-bar:nth-child(1) { height: 8px;  animation-duration: 0.5s; }
+  .eq-bar:nth-child(2) { height: 14px; animation-duration: 0.7s; }
+  .eq-bar:nth-child(3) { height: 10px; animation-duration: 0.4s; }
+  .eq-bar:nth-child(4) { height: 16px; animation-duration: 0.6s; }
+  @keyframes eq {
+    to { height: 4px; }
+  }
+
+  /* ── STATS ── */
+  .stats {
+    position: relative; z-index: 1;
+    display: flex; justify-content: center; flex-wrap: wrap; gap: 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin: 0 0 100px;
+  }
+  .stat-item {
+    flex: 1; min-width: 180px;
+    padding: 40px 32px;
+    text-align: center;
+    border-right: 1px solid var(--border);
+    transition: background 0.3s;
+  }
+  .stat-item:last-child { border-right: none; }
+  .stat-item:hover { background: rgba(255,255,255,0.02); }
+  .stat-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.8rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--text), var(--muted));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+  }
+  .stat-num span { color: var(--accent); -webkit-text-fill-color: var(--accent); }
+  .stat-label {
+    margin-top: 6px;
+    font-size: 0.78rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ── SECTION ── */
+  section {
+    position: relative; z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto 120px;
+    padding: 0 24px;
+  }
+
+  .section-label {
+    display: inline-block;
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+
+  .section-desc {
+    font-size: 1rem;
+    color: var(--muted);
+    max-width: 480px;
+    margin-bottom: 56px;
+  }
+
+  /* ── FEATURES GRID ── */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+
+  .feature-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(230,57,70,0.4), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .feature-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(230,57,70,0.2);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  }
+  .feature-card:hover::before { opacity: 1; }
+
+  .feature-icon {
+    font-size: 2rem;
+    margin-bottom: 16px;
+    display: block;
+  }
+  .feature-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+  .feature-desc {
+    font-size: 0.88rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* ── COUNTRIES ── */
+  .countries-grid {
+    display: flex; flex-wrap: wrap; gap: 10px;
+  }
+  .country-chip {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    transition: border-color 0.25s, transform 0.25s;
+  }
+  .country-chip:hover {
+    border-color: rgba(230,57,70,0.3);
+    transform: scale(1.03);
+  }
+  .country-flag { font-size: 1.1rem; }
+
+  /* ── GENRES ── */
+  .genres-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+  }
+  .genre-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 16px;
+    text-align: center;
+    transition: all 0.25s;
+  }
+  .genre-card:hover {
+    background: rgba(230,57,70,0.08);
+    border-color: rgba(230,57,70,0.2);
+    transform: translateY(-2px);
+  }
+  .genre-card .icon { font-size: 1.6rem; margin-bottom: 8px; display: block; }
+  .genre-card .name { font-size: 0.8rem; color: var(--muted); }
+
+  /* ── CTA BOTTOM ── */
+  .cta-section {
+    position: relative; z-index: 1;
+    margin: 0 24px 100px;
+    background: linear-gradient(135deg, rgba(230,57,70,0.1), rgba(255,107,53,0.05));
+    border: 1px solid rgba(230,57,70,0.15);
+    border-radius: 24px;
+    padding: 72px 48px;
+    text-align: center;
+    overflow: hidden;
+  }
+  .cta-section::before {
+    content: '📻';
+    position: absolute;
+    font-size: 20rem;
+    opacity: 0.03;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    line-height: 1;
+  }
+  .cta-section h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 800;
+    margin-bottom: 16px;
+    letter-spacing: -0.02em;
+  }
+  .cta-section p {
+    color: var(--muted);
+    margin-bottom: 40px;
+    font-size: 1rem;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative; z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 32px 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px;
+  }
+  footer .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 0.9rem;
+    letter-spacing: 0.05em;
+  }
+  footer .logo span { color: var(--accent); }
+  footer p {
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    nav { padding: 16px 20px; }
+    .nav-pill { display: none; }
+    .stat-item { border-right: none; border-bottom: 1px solid var(--border); }
+    footer { padding: 24px 20px; flex-direction: column; text-align: center; }
+    .cta-section { padding: 48px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="glow-orb glow-orb-1"></div>
+<div class="glow-orb glow-orb-2"></div>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">📻 All World <span>Radio</span></a>
+  <span class="nav-pill">Free on Google Play</span>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">Уже доступно для Android</div>
+
+  <h1>
+    Радио<br>
+    <span class="line-accent">со всего мира</span>
+  </h1>
+
+  <p class="hero-sub">
+    Сотни радиостанций из России, Молдовы, Румынии, Беларуси, США и других стран — в одном приложении. Бесплатно.
+  </p>
+
+  <div class="cta-wrap">
+    <a href="https://play.google.com/store/apps/details?id=com.allworld.radio"
+       target="_blank" class="btn-play">
+      <svg viewBox="0 0 24 24" fill="white">
+        <path d="M3 20.5v-17c0-.83 1-.99 1.46-.48l14 8.5c.42.26.42.88 0 1.14l-14 8.5C3.99 21.49 3 21.33 3 20.5z"/>
+      </svg>
+      Скачать на Google Play
+    </a>
+    <a href="#features" class="btn-secondary">Узнать больше ↓</a>
+  </div>
+
+  <!-- Phone mockup -->
+  <div class="hero-visual">
+    <div class="phone-frame">
+      <div class="phone-notch"></div>
+      <div class="phone-screen">
+        <div class="station-row active">
+          <div class="station-icon" style="background:linear-gradient(135deg,#e63946,#ff6b35);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">📻</div>
+          <div class="station-info">
+            <div class="station-name">Европа Плюс</div>
+            <div class="station-genre">Поп · Россия</div>
+          </div>
+          <div class="eq-bars">
+            <div class="eq-bar"></div>
+            <div class="eq-bar"></div>
+            <div class="eq-bar"></div>
+            <div class="eq-bar"></div>
+          </div>
+        </div>
+        <div class="station-row">
+          <div class="station-icon" style="background:linear-gradient(135deg,#2196f3,#00bcd4);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🎵</div>
+          <div class="station-info">
+            <div class="station-name">Kiss FM România</div>
+            <div class="station-genre">Поп · Румыния</div>
+          </div>
+        </div>
+        <div class="station-row">
+          <div class="station-icon" style="background:linear-gradient(135deg,#4caf50,#8bc34a);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🎸</div>
+          <div class="station-info">
+            <div class="station-name">Наше Радио</div>
+            <div class="station-genre">Рок · Россия</div>
+          </div>
+        </div>
+        <div class="station-row">
+          <div class="station-icon" style="background:linear-gradient(135deg,#9c27b0,#673ab7);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🎷</div>
+          <div class="station-info">
+            <div class="station-name">Радио JAZZ</div>
+            <div class="station-genre">Джаз · Россия</div>
+          </div>
+        </div>
+        <div class="station-row">
+          <div class="station-icon" style="background:linear-gradient(135deg,#ff9800,#f44336);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">👶</div>
+          <div class="station-info">
+            <div class="station-name">Веснушка ФМ</div>
+            <div class="station-genre">Детское · Россия</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats reveal">
+  <div class="stat-item">
+    <div class="stat-num">100<span>+</span></div>
+    <div class="stat-label">Радиостанций</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">10<span>+</span></div>
+    <div class="stat-label">Стран мира</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">20<span>+</span></div>
+    <div class="stat-label">Жанров музыки</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">0<span>₽</span></div>
+    <div class="stat-label">Полностью бесплатно</div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="reveal">
+    <span class="section-label">Возможности</span>
+    <h2 class="section-title">Всё что нужно<br>для радио</h2>
+    <p class="section-desc">Простой интерфейс, богатый выбор станций и удобные функции для комфортного прослушивания.</p>
+  </div>
+
+  <div class="features-grid">
+    <div class="feature-card reveal">
+      <span class="feature-icon">🌍</span>
+      <div class="feature-title">Международный выбор</div>
+      <p class="feature-desc">Станции из России, Молдовы, Румынии, Беларуси, Украины, США, Франции, Испании и других стран.</p>
+    </div>
+    <div class="feature-card reveal">
+      <span class="feature-icon">❤️</span>
+      <div class="feature-title">Избранные станции</div>
+      <p class="feature-desc">Добавляйте любимые станции в избранное и мгновенно возвращайтесь к ним в любой момент.</p>
+    </div>
+    <div class="feature-card reveal">
+      <span class="feature-icon">⏳</span>
+      <div class="feature-title">Таймер сна</div>
+      <p class="feature-desc">Засыпайте под любимую музыку — радио выключится автоматически через заданное время.</p>
+    </div>
+    <div class="feature-card reveal">
+      <span class="feature-icon">🔍</span>
+      <div class="feature-title">Поиск и фильтры</div>
+      <p class="feature-desc">Быстрый поиск по названию, фильтрация по жанру и стране — найдите нужную станцию за секунды.</p>
+    </div>
+    <div class="feature-card reveal">
+      <span class="feature-icon">🌙</span>
+      <div class="feature-title">Авто-тема</div>
+      <p class="feature-desc">Светлая тема днём, тёмная ночью — автоматически по расписанию или системным настройкам.</p>
+    </div>
+    <div class="feature-card reveal">
+      <span class="feature-icon">🎧</span>
+      <div class="feature-title">Умная пауза</div>
+      <p class="feature-desc">Воспроизведение автоматически останавливается когда вы отключаете наушники.</p>
+    </div>
+    <div class="feature-card reveal">
+      <span class="feature-icon">🕐</span>
+      <div class="feature-title">История прослушиваний</div>
+      <p class="feature-desc">Последние прослушанные станции всегда под рукой — быстрый доступ к недавнему контенту.</p>
+    </div>
+    <div class="feature-card reveal">
+      <span class="feature-icon">📶</span>
+      <div class="feature-title">Настройка буфера</div>
+      <p class="feature-desc">Гибкая настройка размера буфера для стабильного воспроизведения на любом соединении.</p>
+    </div>
+    <div class="feature-card reveal">
+      <span class="feature-icon">🌐</span>
+      <div class="feature-title">6 языков</div>
+      <p class="feature-desc">Интерфейс на русском, английском, румынском, французском, испанском и португальском.</p>
+    </div>
+  </div>
+</section>
+
+<!-- COUNTRIES -->
+<section>
+  <div class="reveal">
+    <span class="section-label">География</span>
+    <h2 class="section-title">Радио без границ</h2>
+    <p class="section-desc">Станции из разных уголков мира в вашем кармане.</p>
+  </div>
+  <div class="countries-grid reveal">
+    <div class="country-chip"><span class="country-flag">🇷🇺</span> Россия</div>
+    <div class="country-chip"><span class="country-flag">🇲🇩</span> Молдова</div>
+    <div class="country-chip"><span class="country-flag">🇷🇴</span> Румыния</div>
+    <div class="country-chip"><span class="country-flag">🇧🇾</span> Беларусь</div>
+    <div class="country-chip"><span class="country-flag">🇺🇦</span> Украина</div>
+    <div class="country-chip"><span class="country-flag">🇺🇸</span> США</div>
+    <div class="country-chip"><span class="country-flag">🇫🇷</span> Франция</div>
+    <div class="country-chip"><span class="country-flag">🇪🇸</span> Испания</div>
+    <div class="country-chip"><span class="country-flag">🇧🇬</span> Болгария</div>
+    <div class="country-chip"><span class="country-flag">🇧🇷</span> Бразилия</div>
+  </div>
+</section>
+
+<!-- GENRES -->
+<section>
+  <div class="reveal">
+    <span class="section-label">Жанры</span>
+    <h2 class="section-title">Музыка на любой вкус</h2>
+    <p class="section-desc">От поп-хитов до классического джаза — найдите своё звучание.</p>
+  </div>
+  <div class="genres-grid reveal">
+    <div class="genre-card"><span class="icon">🎵</span><div class="name">Поп</div></div>
+    <div class="genre-card"><span class="icon">🎸</span><div class="name">Рок</div></div>
+    <div class="genre-card"><span class="icon">🎷</span><div class="name">Джаз</div></div>
+    <div class="genre-card"><span class="icon">🎹</span><div class="name">Классика</div></div>
+    <div class="genre-card"><span class="icon">🎤</span><div class="name">Шансон</div></div>
+    <div class="genre-card"><span class="icon">🕺</span><div class="name">Dance</div></div>
+    <div class="genre-card"><span class="icon">🎧</span><div class="name">Deep House</div></div>
+    <div class="genre-card"><span class="icon">📰</span><div class="name">Новости</div></div>
+    <div class="genre-card"><span class="icon">🌿</span><div class="name">Релакс</div></div>
+    <div class="genre-card"><span class="icon">🎻</span><div class="name">Ретро</div></div>
+    <div class="genre-card"><span class="icon">👶</span><div class="name">Детское</div></div>
+    <div class="genre-card"><span class="icon">⚡</span><div class="name">Хип-хоп</div></div>
+  </div>
+</section>
+
+<!-- CTA -->
+<div class="cta-section reveal">
+  <h2>Начните слушать прямо сейчас</h2>
+  <p>Бесплатно. Без регистрации. Сотни станций в одном приложении.</p>
+  <a href="https://play.google.com/store/apps/details?id=com.allworld.radio"
+     target="_blank" class="btn-play" style="display:inline-flex;">
+    <svg viewBox="0 0 24 24" fill="white" width="22" height="22">
+      <path d="M3 20.5v-17c0-.83 1-.99 1.46-.48l14 8.5c.42.26.42.88 0 1.14l-14 8.5C3.99 21.49 3 21.33 3 20.5z"/>
+    </svg>
+    Скачать на Google Play
+  </a>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="logo">📻 All World <span>Radio</span></div>
+  <p>© 2026 GreenAppStudio · Все права защищены</p>
+  <p style="font-size:0.75rem;color:var(--muted);">Android is a trademark of Google LLC</p>
+</footer>
+
+<script>
+  // Scroll reveal
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('visible'), i * 80);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // Stagger feature cards
+  document.querySelectorAll('.feature-card.reveal').forEach((el, i) => {
+    el.style.transitionDelay = `${i * 60}ms`;
+  });
+</script>
+</body>
+</html>
